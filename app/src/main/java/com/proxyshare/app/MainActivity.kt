@@ -3,7 +3,9 @@ package com.proxyshare.app
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.net.TrafficStats
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -11,8 +13,6 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import java.io.BufferedReader
-import java.io.FileReader
 import java.net.NetworkInterface
 
 class MainActivity : AppCompatActivity() {
@@ -25,16 +25,25 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvConnections: TextView
     private lateinit var tvHint: TextView
     private lateinit var tvTraffic: TextView
+    private lateinit var graphView: TrafficGraphView
+    private lateinit var tvCredit: TextView
     private val handler = Handler(Looper.getMainLooper())
     private var startRx = 0L
     private var startTx = 0L
+    private var lastRx = 0L
+    private var lastTx = 0L
 
     private val trafficUpdater = object : Runnable {
         override fun run() {
             if (isRunning) {
                 val rx = TrafficStats.getTotalRxBytes() - startRx
                 val tx = TrafficStats.getTotalTxBytes() - startTx
+                val rxSpeed = TrafficStats.getTotalRxBytes() - lastRx
+                val txSpeed = TrafficStats.getTotalTxBytes() - lastTx
+                lastRx = TrafficStats.getTotalRxBytes()
+                lastTx = TrafficStats.getTotalTxBytes()
                 tvTraffic.text = "⬇ ${formatBytes(rx)}   ⬆ ${formatBytes(tx)}"
+                graphView.addPoint(rxSpeed, txSpeed)
                 handler.postDelayed(this, 1000)
             }
         }
@@ -50,6 +59,8 @@ class MainActivity : AppCompatActivity() {
         tvConnections = findViewById(R.id.tvConnections)
         tvHint = findViewById(R.id.tvHint)
         tvTraffic = findViewById(R.id.tvTraffic)
+        graphView = findViewById(R.id.graphView)
+        tvCredit = findViewById(R.id.tvCredit)
         btnToggle.setOnClickListener { if (isRunning) stopProxy() else startProxy() }
         tvIp.setOnClickListener {
             if (isRunning) {
@@ -58,6 +69,9 @@ class MainActivity : AppCompatActivity() {
                 cb.setPrimaryClip(ClipData.newPlainText("ip", ip))
                 Toast.makeText(this, "IP скопирован!", Toast.LENGTH_SHORT).show()
             }
+        }
+        tvCredit.setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://claude.ai")))
         }
     }
 
@@ -69,6 +83,9 @@ class MainActivity : AppCompatActivity() {
             isRunning = true
             startRx = TrafficStats.getTotalRxBytes()
             startTx = TrafficStats.getTotalTxBytes()
+            lastRx = startRx
+            lastTx = startTx
+            graphView.clear()
             handler.post(trafficUpdater)
             btnToggle.text = "Остановить"
             tvStatus.text = "✅ Прокси работает"
@@ -121,5 +138,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onDestroy() { super.onDestroy(); proxyServer?.stop(); handler.removeCallbacks(trafficUpdater) }
+    override fun onDestroy() {
+        super.onDestroy()
+        proxyServer?.stop()
+        handler.removeCallbacks(trafficUpdater)
+    }
 }
