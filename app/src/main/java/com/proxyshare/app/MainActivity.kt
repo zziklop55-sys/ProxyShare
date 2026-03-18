@@ -3,13 +3,17 @@ package com.proxyshare.app
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.net.wifi.WifiManager
+import android.net.TrafficStats
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import java.net.InetAddress
+import java.io.BufferedReader
+import java.io.FileReader
+import java.net.NetworkInterface
 
 class MainActivity : AppCompatActivity() {
     private var proxyServer: ProxyServer? = null
@@ -20,6 +24,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvPort: TextView
     private lateinit var tvConnections: TextView
     private lateinit var tvHint: TextView
+    private lateinit var tvTraffic: TextView
+    private val handler = Handler(Looper.getMainLooper())
+    private var startRx = 0L
+    private var startTx = 0L
+
+    private val trafficUpdater = object : Runnable {
+        override fun run() {
+            if (isRunning) {
+                val rx = TrafficStats.getTotalRxBytes() - startRx
+                val tx = TrafficStats.getTotalTxBytes() - startTx
+                tvTraffic.text = "⬇ ${formatBytes(rx)}   ⬆ ${formatBytes(tx)}"
+                handler.postDelayed(this, 1000)
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +49,7 @@ class MainActivity : AppCompatActivity() {
         tvPort = findViewById(R.id.tvPort)
         tvConnections = findViewById(R.id.tvConnections)
         tvHint = findViewById(R.id.tvHint)
+        tvTraffic = findViewById(R.id.tvTraffic)
         btnToggle.setOnClickListener { if (isRunning) stopProxy() else startProxy() }
         tvIp.setOnClickListener {
             if (isRunning) {
@@ -42,11 +62,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startProxy() {
-        val ip = getLocalIp()
+        val ip = getHotspotIp()
         proxyServer = ProxyServer(8080) { count -> runOnUiThread { tvConnections.text = "Подключений: $count" } }
         try {
             proxyServer!!.start()
             isRunning = true
+            startRx = TrafficStats.getTotalRxBytes()
+            startTx = TrafficStats.getTotalTxBytes()
+            handler.post(trafficUpdater)
             btnToggle.text = "Остановить"
             tvStatus.text = "✅ Прокси работает"
             tvIp.text = "IP: $ip"
@@ -60,24 +83,43 @@ class MainActivity : AppCompatActivity() {
     private fun stopProxy() {
         proxyServer?.stop()
         isRunning = false
+        handler.removeCallbacks(trafficUpdater)
         btnToggle.text = "Запустить прокси"
         tvStatus.text = "⏸ Остановлен"
         tvIp.text = "IP: —"
         tvPort.text = "Порт: —"
         tvConnections.text = "Подключений: 0"
+        tvTraffic.text = "⬇ 0 B   ⬆ 0 B"
         tvHint.text = "Сначала включи VPN и хотспот, затем запусти прокси"
     }
 
-    private fun getLocalIp(): String {
-        return try {
-            val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-            val ip = wm.connectionInfo.ipAddress
-            if (ip != 0) {
-                val b = byteArrayOf((ip and 0xFF).toByte(), (ip shr 8 and 0xFF).toByte(), (ip shr 16 and 0xFF).toByte(), (ip shr 24 and 0xFF).toByte())
-                InetAddress.getByAddress(b).hostAddress ?: "10.0.0.1"
-            } else "10.0.0.1"
-        } catch (e: Exception) { "10.0.0.1" }
+    private fun getHotspotIp(): String {
+        try {
+            val interfaces = NetworkInterface.getNetworkInterfaces()
+            while (interfaces.hasMoreElements()) {
+                val iface = interfaces.nextElement()
+                val name = iface.name
+                if (name.startsWith("ap") || name.startsWith("wlan") || name.startsWith("swlan")) {
+                    val addrs = iface.inetAddresses
+                    while (addrs.hasMoreElements()) {
+                        val addr = addrs.nextElement()
+                        if (!addr.isLoopbackAddress && addr.hostAddress?.contains('.') == true) {
+                            return addr.hostAddress ?: "10.0.0.1"
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) { }
+        return "10.0.0.1"
     }
 
-    override fun onDestroy() { super.onDestroy(); proxyServer?.stop() }
+    private fun formatBytes(bytes: Long): String {
+        return when {
+            bytes < 1024 -> "$bytes B"
+            bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+            else -> String.format("%.1f MB", bytes / (1024.0 * 1024.0))
+        }
+    }
+
+    override fun onDestroy() { super.onDestroy(); proxyServer?.stop(); handler.removeCallbacks(trafficUpdater) }
 }
