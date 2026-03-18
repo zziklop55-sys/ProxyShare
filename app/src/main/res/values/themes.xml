@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.ProxyShare" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#238636</item>
+        <item name="android:windowBackground">#0D1117</item>
+    </style>
+</resources>

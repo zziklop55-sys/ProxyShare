@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="#0D1117"
+    android:padding="24dp" android:gravity="center_horizontal">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="🔒 ProxyShare" android:textColor="#FFFFFF"
+        android:textSize="28sp" android:textStyle="bold" android:layout_marginTop="32dp"/>
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Раздай VPN другим устройствам" android:textColor="#8B949E"
+        android:textSize="14sp" android:layout_marginTop="4dp" android:layout_marginBottom="40dp"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:background="@drawable/card_bg"
+        android:padding="20dp" android:layout_marginBottom="16dp">
+        <TextView android:id="@+id/tvStatus" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:text="⏸ Прокси остановлен"
+            android:textColor="#FFFFFF" android:textSize="18sp" android:textStyle="bold"
+            android:layout_marginBottom="16dp"/>
+        <TextView android:id="@+id/tvIp" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:text="IP: —"
+            android:textColor="#58A6FF" android:textSize="20sp" android:textStyle="bold"/>
+        <TextView android:id="@+id/tvPort" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:text="Порт: —"
+            android:textColor="#58A6FF" android:textSize="20sp" android:textStyle="bold"
+            android:layout_marginTop="4dp"/>
+        <TextView android:id="@+id/tvConnections" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:text="Подключений: 0"
+            android:textColor="#3FB950" android:textSize="14sp" android:layout_marginTop="12dp"/>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:background="@drawable/card_bg"
+        android:padding="16dp" android:layout_marginBottom="32dp">
+        <TextView android:id="@+id/tvHint" android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Сначала включи VPN и хотспот, затем запусти прокси"
+            android:textColor="#8B949E" android:textSize="13sp" android:lineSpacingMultiplier="1.4"/>
+    </LinearLayout>
+    <Button android:id="@+id/btnToggle" android:layout_width="match_parent"
+        android:layout_height="56dp" android:text="Запустить прокси"
+        android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold"
+        android:backgroundTint="#238636" android:stateListAnimator="@null"/>
+</LinearLayout>

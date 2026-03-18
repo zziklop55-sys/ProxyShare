@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="startColor">#238636</color>
+    <color name="stopColor">#DA3633</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+</resources>
